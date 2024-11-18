@@ -10,7 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ArtistService } from './artist.service';
-import { Artist } from './interfaces/artist.interface';
+import { Artist } from './entities/artist.entity';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
 
@@ -20,34 +20,34 @@ export class ArtistController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  getAll(): Artist[] {
-    return this.artistService.findAll();
+  async getAll(): Promise<Artist[]> {
+    return await this.artistService.findAll();
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  getOne(@Param('id') id: string): Artist {
-    return this.artistService.findOne(id);
+  async getOne(@Param('id') id: string): Promise<Artist> {
+    return await this.artistService.findOne(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createArtistDto: CreateArtistDto): Artist {
-    return this.artistService.create(createArtistDto);
+  async create(@Body() createArtistDto: CreateArtistDto): Promise<Artist> {
+    return await this.artistService.create(createArtistDto);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateArtistDto: UpdateArtistDto,
-  ): Artist {
-    return this.artistService.update(id, updateArtistDto);
+  ): Promise<Artist> {
+    return await this.artistService.update(id, updateArtistDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): void {
-    this.artistService.remove(id);
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.artistService.remove(id);
   }
 }
