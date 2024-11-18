@@ -1,10 +1,7 @@
-export interface User {
+export interface UserResponse {
   id: string;
   login: string;
-  password: string;
   version: number;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
-
-export type UserResponse = Omit<User, 'password'>;
