@@ -4,15 +4,16 @@ import {
   Post,
   Put,
   Delete,
-  Body,
   Param,
+  Body,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { TrackService } from './track.service';
-import { Track } from './entities/track.entity';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
+import { Track } from './entities/track.entity';
 
 @Controller('track')
 export class TrackController {
@@ -24,10 +25,12 @@ export class TrackController {
     return await this.trackService.findAll();
   }
 
-  @Get(':id')
+  @Get(':trackId')
   @HttpCode(HttpStatus.OK)
-  async getOne(@Param('id') id: string): Promise<Track> {
-    return await this.trackService.findOne(id);
+  async getOne(
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+  ): Promise<Track> {
+    return await this.trackService.findOne(trackId);
   }
 
   @Post()
@@ -36,18 +39,20 @@ export class TrackController {
     return await this.trackService.create(createTrackDto);
   }
 
-  @Put(':id')
+  @Put(':trackId')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param('id') id: string,
+    @Param('trackId', ParseUUIDPipe) trackId: string,
     @Body() updateTrackDto: UpdateTrackDto,
   ): Promise<Track> {
-    return await this.trackService.update(id, updateTrackDto);
+    return await this.trackService.update(trackId, updateTrackDto);
   }
 
-  @Delete(':id')
+  @Delete(':trackId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.trackService.remove(id);
+  async remove(
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+  ): Promise<void> {
+    await this.trackService.remove(trackId);
   }
 }

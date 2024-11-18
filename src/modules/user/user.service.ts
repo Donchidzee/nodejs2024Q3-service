@@ -18,21 +18,26 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  private toUserResponse(user: User): UserResponse {
+    const { password, createdAt, updatedAt, ...rest } = user;
+    return {
+      ...rest,
+      createdAt: Number(createdAt),
+      updatedAt: Number(updatedAt),
+    };
+  }
+
   async findAll(): Promise<UserResponse[]> {
     const users = await this.userRepository.find();
-    return users.map(({ password, ...rest }) => rest);
+    return users.map((user) => this.toUserResponse(user));
   }
 
   async findOne(id: string): Promise<UserResponse> {
-    if (!id) {
-      throw new BadRequestException('userId is invalid (not uuid)');
-    }
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const { password, ...rest } = user;
-    return rest;
+    return this.toUserResponse(user);
   }
 
   async create(createUserDto: CreateUserDto): Promise<UserResponse> {
@@ -44,8 +49,7 @@ export class UserService {
     }
     const user = this.userRepository.create(createUserDto);
     await this.userRepository.save(user);
-    const { password, ...rest } = user;
-    return rest;
+    return this.toUserResponse(user);
   }
 
   async update(
@@ -56,14 +60,14 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
     if (user.password !== updatePasswordDto.oldPassword) {
-      throw new ForbiddenException('Old password is incorrect');
+      throw new ForbiddenException('Old password does not match');
     }
     user.password = updatePasswordDto.newPassword;
-    user.version += 1;
+    // Version and updatedAt are handled automatically by TypeORM
     await this.userRepository.save(user);
-    const { password, ...rest } = user;
-    return rest;
+    return this.toUserResponse(user);
   }
 
   async remove(id: string): Promise<void> {

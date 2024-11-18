@@ -4,15 +4,16 @@ import {
   Post,
   Put,
   Delete,
-  Body,
   Param,
+  Body,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UserResponse } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UserResponse } from './interfaces/user.interface';
 
 @Controller('user')
 export class UserController {
@@ -26,7 +27,9 @@ export class UserController {
 
   @Get(':userId')
   @HttpCode(HttpStatus.OK)
-  async getOne(@Param('userId') userId: string): Promise<UserResponse> {
+  async getOne(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<UserResponse> {
     return await this.userService.findOne(userId);
   }
 
@@ -39,7 +42,7 @@ export class UserController {
   @Put(':userId')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param('userId') userId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ): Promise<UserResponse> {
     return await this.userService.update(userId, updatePasswordDto);
@@ -47,7 +50,7 @@ export class UserController {
 
   @Delete(':userId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('userId') userId: string): Promise<void> {
+  async remove(@Param('userId', ParseUUIDPipe) userId: string): Promise<void> {
     await this.userService.remove(userId);
   }
 }

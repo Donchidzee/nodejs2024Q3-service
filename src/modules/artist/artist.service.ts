@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Artist } from './entities/artist.entity';
@@ -27,9 +23,6 @@ export class ArtistService {
   }
 
   async findOne(id: string): Promise<Artist> {
-    if (!id) {
-      throw new BadRequestException('Invalid UUID');
-    }
     const artist = await this.artistRepository.findOne({ where: { id } });
     if (!artist) {
       throw new NotFoundException('Artist not found');

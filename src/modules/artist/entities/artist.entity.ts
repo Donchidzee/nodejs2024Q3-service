@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  BeforeInsert,
+  BeforeUpdate,
+} from 'typeorm';
 import { Album } from '../../album/entities/album.entity';
 import { Track } from '../../track/entities/track.entity';
 
@@ -18,4 +25,22 @@ export class Artist {
 
   @OneToMany(() => Track, (track) => track.artist)
   tracks: Track[];
+
+  @Column('bigint')
+  createdAt: number;
+
+  @Column('bigint')
+  updatedAt: number;
+
+  @BeforeInsert()
+  setCreationDate() {
+    const timestamp = Date.now();
+    this.createdAt = timestamp;
+    this.updatedAt = timestamp;
+  }
+
+  @BeforeUpdate()
+  updateTimestamp() {
+    this.updatedAt = Date.now();
+  }
 }

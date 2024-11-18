@@ -59,7 +59,7 @@ export class FavoritesService {
     const favorites = await this.getFavorites();
     const trackIndex = favorites.tracks.findIndex((track) => track.id === id);
     if (trackIndex === -1) {
-      throw new NotFoundException('Track was not found.');
+      throw new NotFoundException('Track not found in favorites');
     }
     favorites.tracks.splice(trackIndex, 1);
     await this.favoritesRepository.save(favorites);
@@ -81,7 +81,7 @@ export class FavoritesService {
     const favorites = await this.getFavorites();
     const albumIndex = favorites.albums.findIndex((album) => album.id === id);
     if (albumIndex === -1) {
-      throw new NotFoundException('Album was not found.');
+      throw new NotFoundException('Album not found in favorites');
     }
     favorites.albums.splice(albumIndex, 1);
     await this.favoritesRepository.save(favorites);
@@ -105,7 +105,7 @@ export class FavoritesService {
       (artist) => artist.id === id,
     );
     if (artistIndex === -1) {
-      throw new NotFoundException('Artist was not found.');
+      throw new NotFoundException('Artist not found in favorites');
     }
     favorites.artists.splice(artistIndex, 1);
     await this.favoritesRepository.save(favorites);

@@ -2,8 +2,8 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
+  BeforeInsert,
+  BeforeUpdate,
   VersionColumn,
 } from 'typeorm';
 
@@ -21,9 +21,21 @@ export class User {
   @VersionColumn()
   version: number;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
+  @Column('bigint')
+  createdAt: number;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
+  @Column('bigint')
+  updatedAt: number;
+
+  @BeforeInsert()
+  setCreationDate() {
+    const timestamp = Date.now();
+    this.createdAt = timestamp;
+    this.updatedAt = timestamp;
+  }
+
+  @BeforeUpdate()
+  updateTimestamp() {
+    this.updatedAt = Date.now();
+  }
 }

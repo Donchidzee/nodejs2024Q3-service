@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Track } from './entities/track.entity';
@@ -27,9 +23,6 @@ export class TrackService {
   }
 
   async findOne(id: string): Promise<Track> {
-    if (!id) {
-      throw new BadRequestException('Invalid UUID');
-    }
     const track = await this.trackRepository.findOne({
       where: { id },
       relations: ['artist', 'album'],
@@ -42,27 +35,34 @@ export class TrackService {
 
   async create(createTrackDto: CreateTrackDto): Promise<Track> {
     const { artistId, albumId, ...rest } = createTrackDto;
-
     const track = this.trackRepository.create(rest);
 
-    if (artistId) {
-      const artist = await this.artistRepository.findOne({
-        where: { id: artistId },
-      });
-      if (!artist) {
-        throw new NotFoundException('Artist not found');
+    if (artistId !== undefined) {
+      if (artistId === null) {
+        track.artist = null;
+      } else {
+        const artist = await this.artistRepository.findOne({
+          where: { id: artistId },
+        });
+        if (!artist) {
+          throw new NotFoundException('Artist not found');
+        }
+        track.artist = artist;
       }
-      track.artist = artist;
     }
 
-    if (albumId) {
-      const album = await this.albumRepository.findOne({
-        where: { id: albumId },
-      });
-      if (!album) {
-        throw new NotFoundException('Album not found');
+    if (albumId !== undefined) {
+      if (albumId === null) {
+        track.album = null;
+      } else {
+        const album = await this.albumRepository.findOne({
+          where: { id: albumId },
+        });
+        if (!album) {
+          throw new NotFoundException('Album not found');
+        }
+        track.album = album;
       }
-      track.album = album;
     }
 
     return await this.trackRepository.save(track);
@@ -70,7 +70,6 @@ export class TrackService {
 
   async update(id: string, updateTrackDto: UpdateTrackDto): Promise<Track> {
     const track = await this.findOne(id);
-
     const { artistId, albumId, ...rest } = updateTrackDto;
 
     Object.assign(track, rest);
