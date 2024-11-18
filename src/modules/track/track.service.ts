@@ -3,66 +3,113 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { Track } from './interfaces/track.interface';
-import { v4 as uuidv4, validate as isUuid } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Track } from './entities/track.entity';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
-import { db } from '../../data/database';
+import { Artist } from '../artist/entities/artist.entity';
+import { Album } from '../album/entities/album.entity';
 
 @Injectable()
 export class TrackService {
-  private tracks = db.tracks;
-  private favorites = db.favorites;
+  constructor(
+    @InjectRepository(Track)
+    private readonly trackRepository: Repository<Track>,
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
+    @InjectRepository(Album)
+    private readonly albumRepository: Repository<Album>,
+  ) {}
 
-  findAll(): Track[] {
-    return this.tracks;
+  async findAll(): Promise<Track[]> {
+    return await this.trackRepository.find({ relations: ['artist', 'album'] });
   }
 
-  findOne(id: string): Track {
-    if (!isUuid(id)) {
+  async findOne(id: string): Promise<Track> {
+    if (!id) {
       throw new BadRequestException('Invalid UUID');
     }
-    const track = this.tracks.find((t) => t.id === id);
+    const track = await this.trackRepository.findOne({
+      where: { id },
+      relations: ['artist', 'album'],
+    });
     if (!track) {
       throw new NotFoundException('Track not found');
     }
     return track;
   }
 
-  create(createTrackDto: CreateTrackDto): Track {
-    const newTrack: Track = {
-      id: uuidv4(),
-      ...createTrackDto,
-    };
-    this.tracks.push(newTrack);
-    return newTrack;
+  async create(createTrackDto: CreateTrackDto): Promise<Track> {
+    const { artistId, albumId, ...rest } = createTrackDto;
+
+    const track = this.trackRepository.create(rest);
+
+    if (artistId) {
+      const artist = await this.artistRepository.findOne({
+        where: { id: artistId },
+      });
+      if (!artist) {
+        throw new NotFoundException('Artist not found');
+      }
+      track.artist = artist;
+    }
+
+    if (albumId) {
+      const album = await this.albumRepository.findOne({
+        where: { id: albumId },
+      });
+      if (!album) {
+        throw new NotFoundException('Album not found');
+      }
+      track.album = album;
+    }
+
+    return await this.trackRepository.save(track);
   }
 
-  update(id: string, updateTrackDto: UpdateTrackDto): Track {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
+  async update(id: string, updateTrackDto: UpdateTrackDto): Promise<Track> {
+    const track = await this.findOne(id);
+
+    const { artistId, albumId, ...rest } = updateTrackDto;
+
+    Object.assign(track, rest);
+
+    if (artistId !== undefined) {
+      if (artistId === null) {
+        track.artist = null;
+      } else {
+        const artist = await this.artistRepository.findOne({
+          where: { id: artistId },
+        });
+        if (!artist) {
+          throw new NotFoundException('Artist not found');
+        }
+        track.artist = artist;
+      }
     }
-    const trackIndex = this.tracks.findIndex((t) => t.id === id);
-    if (trackIndex === -1) {
-      throw new NotFoundException('Track not found');
+
+    if (albumId !== undefined) {
+      if (albumId === null) {
+        track.album = null;
+      } else {
+        const album = await this.albumRepository.findOne({
+          where: { id: albumId },
+        });
+        if (!album) {
+          throw new NotFoundException('Album not found');
+        }
+        track.album = album;
+      }
     }
-    const updatedTrack = { ...this.tracks[trackIndex], ...updateTrackDto };
-    this.tracks[trackIndex] = updatedTrack;
-    return updatedTrack;
+
+    return await this.trackRepository.save(track);
   }
 
-  remove(id: string): void {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
-    }
-    const index = this.tracks.findIndex((t) => t.id === id);
-    if (index === -1) {
+  async remove(id: string): Promise<void> {
+    const result = await this.trackRepository.delete(id);
+    if (result.affected === 0) {
       throw new NotFoundException('Track not found');
     }
-    this.tracks.splice(index, 1);
-
-    this.favorites.tracks = this.favorites.tracks.filter(
-      (trackId) => trackId !== id,
-    );
   }
 }
