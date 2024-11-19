@@ -4,15 +4,16 @@ import {
   Post,
   Put,
   Delete,
-  Body,
   Param,
+  Body,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UserResponse } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UserResponse } from './interfaces/user.interface';
 
 @Controller('user')
 export class UserController {
@@ -20,34 +21,36 @@ export class UserController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  getAll(): UserResponse[] {
-    return this.userService.findAll();
+  async getAll(): Promise<UserResponse[]> {
+    return await this.userService.findAll();
   }
 
-  @Get(':id')
+  @Get(':userId')
   @HttpCode(HttpStatus.OK)
-  getOne(@Param('id') id: string): UserResponse {
-    return this.userService.findOne(id);
+  async getOne(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<UserResponse> {
+    return await this.userService.findOne(userId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createUserDto: CreateUserDto): UserResponse {
-    return this.userService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponse> {
+    return await this.userService.create(createUserDto);
   }
 
-  @Put(':id')
+  @Put(':userId')
   @HttpCode(HttpStatus.OK)
-  update(
-    @Param('id') id: string,
+  async update(
+    @Param('userId', ParseUUIDPipe) userId: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
-  ): UserResponse {
-    return this.userService.update(id, updatePasswordDto);
+  ): Promise<UserResponse> {
+    return await this.userService.update(userId, updatePasswordDto);
   }
 
-  @Delete(':id')
+  @Delete(':userId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): void {
-    this.userService.remove(id);
+  async remove(@Param('userId', ParseUUIDPipe) userId: string): Promise<void> {
+    await this.userService.remove(userId);
   }
 }

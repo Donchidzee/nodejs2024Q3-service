@@ -1,75 +1,85 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
-import { Album } from './interfaces/album.interface';
-import { v4 as uuidv4, validate as isUuid } from 'uuid';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Album } from './entities/album.entity';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
-import { db } from '../../data/database';
+import { Artist } from '../artist/entities/artist.entity';
+import { Track } from '../track/entities/track.entity';
 
 @Injectable()
 export class AlbumService {
-  private albums = db.albums;
-  private tracks = db.tracks;
-  private favorites = db.favorites;
+  constructor(
+    @InjectRepository(Album)
+    private readonly albumRepository: Repository<Album>,
+    @InjectRepository(Artist)
+    private readonly artistRepository: Repository<Artist>,
+    @InjectRepository(Track)
+    private readonly trackRepository: Repository<Track>,
+  ) {}
 
-  findAll(): Album[] {
-    return this.albums;
+  async findAll(): Promise<Album[]> {
+    return await this.albumRepository.find({ relations: ['artist'] });
   }
 
-  findOne(id: string): Album {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
-    }
-    const album = this.albums.find((a) => a.id === id);
+  async findOne(id: string): Promise<Album> {
+    const album = await this.albumRepository.findOne({
+      where: { id },
+      relations: ['artist'],
+    });
     if (!album) {
       throw new NotFoundException('Album not found');
     }
     return album;
   }
 
-  create(createAlbumDto: CreateAlbumDto): Album {
-    const newAlbum: Album = {
-      id: uuidv4(),
-      ...createAlbumDto,
-    };
-    this.albums.push(newAlbum);
-    return newAlbum;
-  }
+  async create(createAlbumDto: CreateAlbumDto): Promise<Album> {
+    const { artistId, ...rest } = createAlbumDto;
+    const album = this.albumRepository.create(rest);
 
-  update(id: string, updateAlbumDto: UpdateAlbumDto): Album {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
-    }
-    const albumIndex = this.albums.findIndex((a) => a.id === id);
-    if (albumIndex === -1) {
-      throw new NotFoundException('Album not found');
-    }
-    const updatedAlbum = { ...this.albums[albumIndex], ...updateAlbumDto };
-    this.albums[albumIndex] = updatedAlbum;
-    return updatedAlbum;
-  }
-
-  remove(id: string): void {
-    if (!isUuid(id)) {
-      throw new BadRequestException('Invalid UUID');
-    }
-    const index = this.albums.findIndex((a) => a.id === id);
-    if (index === -1) {
-      throw new NotFoundException('Album not found');
-    }
-    this.albums.splice(index, 1);
-
-    this.favorites.albums = this.favorites.albums.filter(
-      (albumId) => albumId !== id,
-    );
-
-    this.tracks.forEach((track) => {
-      if (track.albumId === id) {
-        track.albumId = null;
+    if (artistId) {
+      const artist = await this.artistRepository.findOne({
+        where: { id: artistId },
+      });
+      if (!artist) {
+        throw new NotFoundException('Artist not found');
       }
-    });
+      album.artist = artist;
+    }
+
+    return await this.albumRepository.save(album);
+  }
+
+  async update(id: string, updateAlbumDto: UpdateAlbumDto): Promise<Album> {
+    const album = await this.findOne(id);
+    const { artistId, ...rest } = updateAlbumDto;
+
+    Object.assign(album, rest);
+
+    if (artistId !== undefined) {
+      if (artistId === null) {
+        album.artist = null;
+      } else {
+        const artist = await this.artistRepository.findOne({
+          where: { id: artistId },
+        });
+        if (!artist) {
+          throw new NotFoundException('Artist not found');
+        }
+        album.artist = artist;
+      }
+    }
+
+    return await this.albumRepository.save(album);
+  }
+
+  async remove(id: string): Promise<void> {
+    // Set albumId to null in related tracks
+    await this.trackRepository.update({ album: { id } }, { album: null });
+
+    const result = await this.albumRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('Album not found');
+    }
   }
 }

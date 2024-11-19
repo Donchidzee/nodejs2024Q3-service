@@ -4,15 +4,16 @@ import {
   Post,
   Put,
   Delete,
-  Body,
   Param,
+  Body,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ArtistService } from './artist.service';
-import { Artist } from './interfaces/artist.interface';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
+import { Artist } from './entities/artist.entity';
 
 @Controller('artist')
 export class ArtistController {
@@ -20,34 +21,38 @@ export class ArtistController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  getAll(): Artist[] {
-    return this.artistService.findAll();
+  async getAll(): Promise<Artist[]> {
+    return await this.artistService.findAll();
   }
 
-  @Get(':id')
+  @Get(':artistId')
   @HttpCode(HttpStatus.OK)
-  getOne(@Param('id') id: string): Artist {
-    return this.artistService.findOne(id);
+  async getOne(
+    @Param('artistId', ParseUUIDPipe) artistId: string,
+  ): Promise<Artist> {
+    return await this.artistService.findOne(artistId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createArtistDto: CreateArtistDto): Artist {
-    return this.artistService.create(createArtistDto);
+  async create(@Body() createArtistDto: CreateArtistDto): Promise<Artist> {
+    return await this.artistService.create(createArtistDto);
   }
 
-  @Put(':id')
+  @Put(':artistId')
   @HttpCode(HttpStatus.OK)
-  update(
-    @Param('id') id: string,
+  async update(
+    @Param('artistId', ParseUUIDPipe) artistId: string,
     @Body() updateArtistDto: UpdateArtistDto,
-  ): Artist {
-    return this.artistService.update(id, updateArtistDto);
+  ): Promise<Artist> {
+    return await this.artistService.update(artistId, updateArtistDto);
   }
 
-  @Delete(':id')
+  @Delete(':artistId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): void {
-    this.artistService.remove(id);
+  async remove(
+    @Param('artistId', ParseUUIDPipe) artistId: string,
+  ): Promise<void> {
+    await this.artistService.remove(artistId);
   }
 }
