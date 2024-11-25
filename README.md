@@ -59,6 +59,7 @@ npm run test:auth -- <path to suite>
 
 ```
 npm run lint
+npm run lint
 ```
 
 ```
